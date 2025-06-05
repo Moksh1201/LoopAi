@@ -1,0 +1,12 @@
+# docker-compose.yml
+version: "3.8"
+
+services:
+  loopai_service:
+    image: loopai        
+    container_name: loopai_service
+    ports:
+      - "8000:8000"      
+    environment:
+      RATE_LIMIT_SECONDS: "1"  
+    restart: unless-stopped

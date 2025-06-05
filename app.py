@@ -7,11 +7,11 @@ from typing import List, Dict, Any
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 RATE_LIMIT_SECONDS = float(os.getenv("RATE_LIMIT_SECONDS", "5"))
+MAX_ID = 10**9 + 7
 
-# ——— Priority Enum ———
 class Priority(str, Enum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -20,6 +20,13 @@ class Priority(str, Enum):
 class IngestRequest(BaseModel):
     ids: List[int] = Field(..., example=[1, 2, 3, 4, 5], min_items=1)
     priority: Priority = Field(..., example="MEDIUM")
+
+    @validator('ids')
+    def validate_ids(cls, v):
+        for id in v:
+            if not (1 <= id <= MAX_ID):
+                raise ValueError(f"ID must be between 1 and {MAX_ID}")
+        return v
 
 class BatchInfo(BaseModel):
     batch_id: str
@@ -43,7 +50,6 @@ def _priority_rank(p: Priority) -> int:
     return {"HIGH": 1, "MEDIUM": 2, "LOW": 3}[p.value]
 
 
-# ——— FastAPI App ———
 app = FastAPI(title="Data Ingestion API System", version="1.0.0")
 
 
@@ -140,9 +146,10 @@ async def _batch_worker():
 
 
 async def _process_batch(ingestion_id: str, batch_id: str, ids_list: List[int]):
-    
+    """Simulate processing each ID by calling an external API."""
     for _id in ids_list:
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.5 + asyncio.get_event_loop().time() % 1.0)
+        response = {"id": _id, "data": f"processed_{_id}"}
     return
 
 
